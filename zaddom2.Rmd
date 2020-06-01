@@ -1,0 +1,49 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+sample_y = function(size) {
+  random_vals = runif(size)
+  first_k = function(k_cand, x) {
+    m = matrix(c(k_cand, k_cand+1, k_cand+2, k_cand+3, k_cand+4), ncol = 5)
+    cols = (0.5/(m+1)/(m+2) <= x)
+    
+    cols = max.col(cols, ties.method = c("first"))
+    m[cbind(seq_along(cols), cols)]
+  }
+  
+  ret = pmax(floor(sqrt(1/(2*(random_vals %% 0.25)))) - 2, 1)
+  ret = first_k(ret, random_vals %% 0.25)
+  
+  ret[random_vals >= 0.5] = 0
+  ret[random_vals < 0.5 & random_vals >= 0.25] = -1 * ret[random_vals < 0.5 & random_vals >= 0.25]
+  ret
+}
+sample_y(10)
+
+prob = function(data) {
+  out = rep(1/2, length(data))
+  a = abs(data[data != 0])
+  out[data != 0] = 1/a/(a+1)/(a+2)
+  out
+}
+```
+
+```{r}
+plot(-10:10, prob(-10:10))
+```
+
+```{r}
+N = 10000
+y    = sample_y(N)
+ybar = cumsum(y) / (1:N)
+plot(ybar, type = "l", lty = 3)
+```
+```{r}
+yhat = sapply(1:length(ybar), function(i) median(ybar[1:i]))
+plot(yhat, type = "l", lty = 3)
+
+```
+

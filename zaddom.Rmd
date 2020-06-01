@@ -1,0 +1,102 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+
+
+prepare_data <- function(probabilities) {
+  len = length(probabilities)
+  probabilities = probabilities[1:len]
+  probability = probabilities[1:len]
+  alias = vector("integer", len) + 1
+  average = 1/len
+
+  small = which(probabilities <  average)
+  large = which(probabilities >= average)
+  small_iter = length(small)
+  large_iter = length(large)
+
+  while (small_iter >= 1 && large_iter >= 1) {
+    less = small[small_iter]
+    small_iter = small_iter - 1
+    more = large[large_iter]
+    large_iter = large_iter - 1
+    
+    probability[less] = probabilities[less] * len
+
+    alias[less] = more
+    probabilities[more] = probabilities[more] + probabilities[less] - average
+    if (probabilities[more] >= average) {
+      large_iter = large_iter + 1;
+      large[large_iter] = more;
+    } else {
+      small_iter = small_iter + 1;
+      small[small_iter] = more;
+    }
+  }
+
+  if (small_iter >= 1) {
+    probability[small[1:small_iter]] = 1
+  }
+  if (large_iter >= 1) {
+    probability[large[1:large_iter]] = 1
+  }
+  list(probability, alias)
+}
+
+
+next_rand <- function(data, count) {
+    probability = data[[1]]
+    alias = data[[2]]
+    column = sample.int(length(probability), count, replace = TRUE)
+    coinToss = runif(count) < probability[column]
+    v <- vector('double', count)
+    v[coinToss] = column[coinToss]
+    v[!coinToss] = alias[column[!coinToss]]
+    v
+}
+
+#data = prepare_data(c(1/3, 1/7, 1/7, 1 - 2/7-1/3))
+#next_rand(data, 20)
+
+library(data.table)
+stats = fread('/home/enedil/mimuw/rpis/us_births_69_88.csv', header = TRUE)
+colnames(stats)
+distribution = stats[,3][[1]] / sum(stats[,3][[1]])
+data = prepare_data(distribution)
+
+N = 100000
+
+make_bday <- function(data, batch_size) {
+  visited = vector('integer', 12*31)
+  random_numbers = c()
+  i = 0
+  
+  f <- function() {
+    k = 0
+    while (TRUE) {
+      if (i == 0) {
+        random_numbers <<- next_rand(data, batch_size)
+      }
+      while (i < batch_size) {
+        i <<- i + 1
+        k <- k + 1
+        r = random_numbers[i]
+        if (visited[r]) {
+          visited = vector('integer', 12*31)
+          return (k);
+        }
+        visited[r] = 1;
+      }
+      i <<- 0
+    }
+  }
+  return (f)
+}
+
+bday = make_bday(data, N)
+empSample_2c = replicate(N, bday())
+hist(empSample_2c, breaks = 120, col=rgb(1,1,0,0.5), freq = FALSE,main = 'Histogram of empSample_2c',xlab = 'required number of draws to repeat')
+```

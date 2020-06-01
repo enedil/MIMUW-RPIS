@@ -1,0 +1,91 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+data = t(matrix(c(17508, 11642,  3308,  3131,  2911,  2205,  1852, 1235, 17672,  9318,  4865,  3259,  3029,  2479,  1606, 3259), 8))
+ri = rowSums(data)
+ci = colSums(data)
+N = sum(data)
+fij = t(t(ri)) %*% t(ci) / N
+S = sum((data - fij)^2  / fij)
+print(pchisq(S, 7, lower.tail=FALSE))
+# wynik jest rzędu 10^{-314}
+
+data = t(matrix(c(17508, 11642,  3308,  3131,  2911,  2205,  1852, 17672,  9318,  4865,  3259,  3029,  2479,  1606), 7))
+ri = rowSums(data)
+ci = colSums(data)
+N = sum(data)
+fij = t(t(ri)) %*% t(ci) / N
+S = sum((data - fij)^2  / fij)
+print(pchisq(S, 6, lower.tail=FALSE))
+# wynik jest rzędu 10^{-124}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+Viterbi = function(Y, S, O, B, A, p)  {
+  
+  if(length(Y) > 1) {
+    probM = idxM = matrix(0, nrow = length(S), ncol = length(Y))
+    probM[,1] = p * A[,Y[1]]
+    
+    for(i in 2:length(Y)) {
+      for(j in 1:length(S)) {
+        transitionProbs = probM[,i-1] * B[,j] * A[j,Y[i]]
+        idxM[j,i] = which.max(transitionProbs)
+        probM[j,i] = transitionProbs[idxM[j,i]]
+      }
+    }
+    
+    states = character(length(Y))
+    lastStateIdx = which.max(probM[,length(Y)])
+    states[length(Y)] = S[lastStateIdx]
+    
+    for(i in length(Y):2) {
+      stateIdx = idxM[lastStateIdx,i]
+      states[i-1] = S[stateIdx]
+      lastStateIdx = stateIdx
+    }
+  } else states = S[which.max(p * A[,Y[1]])]
+  
+  return(states)
+}
+```
